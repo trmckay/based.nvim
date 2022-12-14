@@ -1,62 +1,62 @@
 local M = {}
 
-local default_patterns = {
-    c = {
-        hex = { "^0[xX](%x*)$" },
-        dec = { "^(%d*)$" },
-    },
-    verilog = {
-        hex = { "^h(%x*)" },
-        dec = { "^d(%x*)", "^(%d*)$" },
-    },
-    systemverilog = {
-        hex = { "%h(%x*)" },
-        dec = { "%d(%x*)", "^(%d*)$" },
-    },
-}
-
-setmetatable(default_patterns, {
-    __index = function(table, _)
-        return table.c
-    end,
-})
+local opts = {}
 
 local extmark_ns
 local extmark_ids = {}
 
-local default_renderer = function(n, base, winnr)
-    local hint
-
-    if base == "hex" then
-        hint = string.format(" => %d", n, n)
-    elseif base == "dec" then
-        hint = string.format(" => 0x%x", n, n)
-    else
-        return
-    end
-
-    local cursor = vim.api.nvim_win_get_cursor(winnr)
-    local bufnr = vim.api.nvim_win_get_buf(winnr)
-
-    if not extmark_ns then
-        extmark_ns = vim.api.nvim_create_namespace("Based")
-    end
-
-    local id = vim.api.nvim_buf_set_extmark(bufnr or 0, extmark_ns, cursor[1] - 1, -1, {
-        virt_text_pos = 'overlay',
-        virt_text = {
-            { hint,  },
+local defaults = {
+    patterns = {
+        c = {
+            hex = { "^0[xX](%x*)$" },
+            dec = { "^(%d*)$" },
         },
-    })
+        verilog = {
+            hex = { "^h(%x*)" },
+            dec = { "^d(%x*)", "^(%d*)$" },
+        },
+        systemverilog = {
+            hex = { "%h(%x*)" },
+            dec = { "%d(%x*)", "^(%d*)$" },
+        },
+    },
+    renderer = function(n, base, winnr)
+        local hint
 
-    table.insert(extmark_ids, id)
-end
+        if base == "hex" then
+            hint = string.format(" => %d", n, n)
+        elseif base == "dec" then
+            hint = string.format(" => 0x%x", n, n)
+        else
+            return
+        end
 
-local opts = {
-    patterns = default_patterns,
-    renderer = default_renderer,
+        local cursor = vim.api.nvim_win_get_cursor(winnr)
+        local bufnr = vim.api.nvim_win_get_buf(winnr)
+
+        if not extmark_ns then
+            extmark_ns = vim.api.nvim_create_namespace("Based")
+        end
+
+        local id = vim.api.nvim_buf_set_extmark(bufnr or 0, extmark_ns, cursor[1] - 1, -1, {
+            virt_text_pos = "overlay",
+            virt_text = {
+                { hint, opts.highlight },
+            },
+        })
+
+        table.insert(extmark_ids, id)
+    end,
     highlight = "Comment",
 }
+
+opts = defaults
+
+setmetatable(defaults.patterns, {
+    __index = function(table, _)
+        return table.c
+    end,
+})
 
 local parse_int = function(str, base, base_patterns)
     for _, p in ipairs(base_patterns) do
@@ -91,7 +91,7 @@ end
 
 vim.api.nvim_create_autocmd("CursorMoved", {
     pattern = "*",
-    group = vim.api.nvim_create_augroup("Baed", { clear = true }),
+    group = vim.api.nvim_create_augroup("Based", { clear = true }),
     callback = clear_hints,
 })
 
