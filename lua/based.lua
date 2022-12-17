@@ -16,8 +16,12 @@ local defaults = {
             dec = { "^d(%x*)", "^(%d*)$" },
         },
         systemverilog = {
-            hex = { "%h(%x*)" },
-            dec = { "%d(%x*)", "^(%d*)$" },
+            hex = { "^h(%x*)" },
+            dec = { "^d(%x*)", "^(%d*)$" },
+        },
+        dts = {
+            hex = { "^0[xX](%x*)$", "@(%x*)$" },
+            dec = { "^(%d*)$" },
         },
     },
     renderer = function(n, base, winnr, line)
