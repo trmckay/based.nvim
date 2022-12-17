@@ -76,12 +76,21 @@ end
 
 local buf_parse_int = function(str, base, bufnr)
     local ft_patterns = M.opts.patterns[vim.api.nvim_buf_get_option(bufnr or 0, "filetype")]
+
+    if base == "hex" then
+        parse_int(str, 16, vim.list_extend(ft_patterns.hex, { "(%x*)" }))
+    end
+
+    if base == "dec" then
+        parse_int(str, 10, vim.list_extend(ft_patterns.dec, { "(%d*)" }))
+    end
+
     local n = parse_int(str, 16, ft_patterns.hex)
-    if n or base == "hex" then
+    if n then
         return n, "hex"
     end
     n = parse_int(str, 10, ft_patterns.dec)
-    if n or base == "dec" then
+    if n  then
         return n, "dec"
     end
 end
