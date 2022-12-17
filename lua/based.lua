@@ -128,7 +128,7 @@ end
 
 
 -- Clear all hints when something happens
-vim.api.nvim_create_autocmd("CursorMoved,ModeChanged", {
+vim.api.nvim_create_autocmd("CursorMoved,ModeChanged,WinLeave", {
     pattern = "*",
     group = vim.api.nvim_create_augroup("Based", { clear = true }),
     callback = clear_hints,
