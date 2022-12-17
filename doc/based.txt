@@ -7,7 +7,12 @@ Homepage: <https://github.com/trmckay/based.nvim>
 License:  MIT license
 
 ==============================================================================
-BASED API                                                              *based*
+INTRODUCTION                                                           *based*
+
+based.nvim is a Neovim plugin for quickly converting buffer text to/from hex.
+
+==============================================================================
+LUA API                                                            *based-lua*
 
 >
 setup({cfg})                                                   *based.setup()*
@@ -46,12 +51,19 @@ setup({cfg})                                                   *based.setup()*
                     highlight = "Comment",
                 })
 
-convert({base})                                                    *based.convert()*
 
-        Convert the cursor word in normal mode, or the visual
-        selection line-by-line.
+convert({base})                                              *based.convert()*
+
+        Convert the cursor word in normal mode, or a single-line visual
+        selection.
 
         Parameters: ~
-            {base} (string|nil)  Source base. "dec", "hex" or nil. If this is not
-                                 provided, the plugin will attempt to parse as
-                                 hex first.
+            {base} (string|nil)  Source base. "dec", "hex" or nil. If this is
+                                 not provided, the plugin will attempt to
+                                 parse as hex first.
+
+
+==============================================================================
+COMMAND                                                        *based-command*
+
+:BasedConvert {base}  User-command wrapper around |based.convert()|.
