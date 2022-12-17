@@ -2,6 +2,10 @@
 
 based.nvim is a Neovim plugin for quickly converting buffer text to/from hex.
 
+## Demo
+
+https://user-images.githubusercontent.com/43476566/208219534-cc7985ed-60e9-4c4b-a46a-a60788df5ae6.mov
+
 ## Example configuration
 
 ```lua
