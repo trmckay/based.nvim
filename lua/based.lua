@@ -121,20 +121,29 @@ local cword = function(base)
     parse_and_render(vim.fn.expand("<cword>"), base, 0, vim.api.nvim_win_get_cursor(0)[1])
 end
 
+
+-- Parse and convert a single-line visual selection
+--
+-- @param base number|nil: integer base, nil if autodetected
 local visual = function(base)
-    local a_orig = vim.fn.getreg("a")
-    local mode = vim.fn.mode()
-    if mode ~= "v" and mode ~= "V" then
-        vim.cmd([[normal! gv]])
+    local vstart = vim.fn.getpos("v")
+    local vend = vim.fn.getpos(".")
+
+    -- TODO: I don't think there is an intuitive way to support multi-line selections,
+    -- but maybe there is a good way to do this.
+    if vend[2] - vstart[2] ~= 0 then
+        return
     end
-    vim.cmd([[normal! "aygv]])
-    local selection = vim.fn.getreg("a")
-    vim.fn.setreg("a", a_orig)
-    local line = vim.fn.getpos("v")[2]
-    for offset, line_text in ipairs(vim.fn.split(selection, "\n")) do
-        local _, _, text = line_text:find("^%s*(.*)%s*$")
-        parse_and_render(text, base, 0, line + offset - 1)
-    end
+
+    local line = vstart[2] - 1
+
+    -- Get single-line visual selection and strip leading/trailing whitespace
+    local selection = vim.api.nvim_buf_get_lines(0, line, line + 1, false)[1]
+    selection = selection:sub(vstart[3], vend[3])
+    vim.notify(selection, vim.log.levels.ERROR)
+    _, _, selection = selection:find("^%s*(.*)%s*$")
+
+    parse_and_render(selection, base, 0, line + 1)
 end
 
 M.convert = function(base)
