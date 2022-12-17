@@ -70,14 +70,14 @@ local parse_int = function(str, base, base_patterns)
     end
 end
 
-local buf_parse_int = function(str, bufnr)
+local buf_parse_int = function(str, base, bufnr)
     local ft_patterns = M.opts.patterns[vim.api.nvim_buf_get_option(bufnr or 0, "filetype")]
     local n = parse_int(str, 16, ft_patterns.hex)
-    if n then
+    if n or base == "hex" then
         return n, "hex"
     end
     n = parse_int(str, 10, ft_patterns.dec)
-    if n then
+    if n or base == "dec" then
         return n, "dec"
     end
 end
@@ -95,20 +95,20 @@ vim.api.nvim_create_autocmd("CursorMoved,ModeChanged", {
     callback = clear_hints,
 })
 
-local parse_and_render = function(str, winnr, line)
+local parse_and_render = function(str, base, winnr, line)
     winnr = winnr or vim.api.nvim_get_current_win()
     local bufnr = vim.api.nvim_win_get_buf(winnr)
-    local n, base = buf_parse_int(str, bufnr)
+    local n, found_base = buf_parse_int(str, base, bufnr)
     if n then
-        M.opts.renderer(n, base, winnr, line)
+        M.opts.renderer(n, found_base, winnr, line)
     end
 end
 
-local cword = function()
-    parse_and_render(vim.fn.expand("<cword>"), 0, vim.api.nvim_win_get_cursor(0)[1])
+local cword = function(base)
+    parse_and_render(vim.fn.expand("<cword>"), base, 0, vim.api.nvim_win_get_cursor(0)[1])
 end
 
-local visual = function()
+local visual = function(base)
     local a_orig = vim.fn.getreg("a")
     local mode = vim.fn.mode()
     if mode ~= "v" and mode ~= "V" then
@@ -120,15 +120,15 @@ local visual = function()
     local line = vim.fn.getpos("v")[2]
     for offset, line_text in ipairs(vim.fn.split(selection, "\n")) do
         local _, _, text = line_text:find("^%s*(.*)%s*$")
-        parse_and_render(text, 0, line + offset - 1)
+        parse_and_render(text, base, 0, line + offset - 1)
     end
 end
 
-M.convert = function()
+M.convert = function(base)
     if vim.fn.mode() == "n" then
-        cword()
+        cword(base)
     else
-        visual()
+        visual(base)
     end
 end
 
