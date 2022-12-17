@@ -145,7 +145,9 @@ M.convert = function(base)
     end
 end
 
-vim.api.nvim_create_user_command("BasedConvert", M.convert, { nargs = 0 })
+vim.api.nvim_create_user_command("BasedConvert", function(opts)
+    M.convert(opts.fargs[1])
+end, { nargs = "?" })
 
 M.setup = function(user_opts)
     M.opts = vim.tbl_deep_extend("force", M.opts, user_opts)
