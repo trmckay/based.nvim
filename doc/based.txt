@@ -38,6 +38,13 @@ setup({cfg})                                                   *based.setup()*
                         },
                         -- more filetypes...
                     },
+                    -- Patterns not used to detect a base, but
+                    -- that will be used when a base is
+                    -- specified.
+                    fallback_patterns = {
+                        hex = { "(%x*)" },
+                        dec = { "(%d*)" },
+                    },
                     -- Function that renders a hint. n is the
                     -- parsed integer, base is either "dec" or
                     -- "hex", winnr is the window from which

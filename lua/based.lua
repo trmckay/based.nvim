@@ -25,6 +25,12 @@ M.opts = {
             dec = { "^d(%x*)", "^(%d*)$" },
         },
     },
+    -- Patterns not used to detect a base, but that will be
+    -- used when a base is specified
+    fallback_patterns = {
+        hex = { "(%x*)" },
+        dec = { "(%d*)" },
+    },
     -- Render a hint
     --
     -- @param n number: the parsed value of an integer
@@ -92,25 +98,29 @@ end
 -- @param str string: what to parse
 -- @param base number|nil: integer base, nil if autodetected
 -- @param bufnr number: used to get patterns for the buffer's filetype
+-- @return (number, string): parsed number and "dec" or "hex"
 local buf_parse_int = function(str, base, bufnr)
-    local ft_patterns = M.opts.patterns[vim.api.nvim_buf_get_option(bufnr or 0, "filetype")]
-
+    local patterns = M.opts.patterns[vim.api.nvim_buf_get_option(bufnr or 0, "filetype")]
+    local n
     if base == "hex" then
-        parse_int(str, 16, vim.list_extend(ft_patterns.hex, { "(%x*)" }))
+        n = parse_int(str, 16, patterns.hex)
+        if not n then
+            n = parse_int(str, 16, M.opts.fallback_patterns.hex)
+        end
+    elseif base == "dec" then
+        n = parse_int(str, 10, patterns.dec)
+        if not n then
+            n = parse_int(str, 16, M.opts.fallback_patterns.dec)
+        end
+    else
+        n = parse_int(str, 16, patterns.hex)
+        base = "hex"
+        if not n then
+            n = parse_int(str, 10, patterns.dec)
+            base = "dec"
+        end
     end
-
-    if base == "dec" then
-        parse_int(str, 10, vim.list_extend(ft_patterns.dec, { "(%d*)" }))
-    end
-
-    local n = parse_int(str, 16, ft_patterns.hex)
-    if n then
-        return n, "hex"
-    end
-    n = parse_int(str, 10, ft_patterns.dec)
-    if n  then
-        return n, "dec"
-    end
+    return n, base
 end
 
 
