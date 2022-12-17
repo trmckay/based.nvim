@@ -4,9 +4,8 @@ local M = {}
 -- Extmark namespace in which to render virtual hint text
 local extmark_ns
 
-
 -- List of currently visible extmarks
-local extmark_ids = {}
+local extmarks = {}
 
 
 -- Default options
@@ -54,14 +53,14 @@ M.opts = {
             extmark_ns = vim.api.nvim_create_namespace("Based")
         end
 
-        local id = vim.api.nvim_buf_set_extmark(bufnr or 0, extmark_ns, line - 1, -1, {
+        local id = vim.api.nvim_buf_set_extmark(bufnr, extmark_ns, line - 1, -1, {
             virt_text_pos = "overlay",
             virt_text = {
                 { hint, M.opts.highlight },
             },
         })
 
-        table.insert(extmark_ids, id)
+        table.insert(extmarks, { id = id, bufnr = bufnr })
     end,
     highlight = "Comment",
 }
@@ -126,10 +125,10 @@ end
 
 -- Clear all hints from all windows
 local clear_hints = function()
-    for _, id in ipairs(extmark_ids) do
-        vim.api.nvim_buf_del_extmark(0, extmark_ns, id)
+    for _, extmark in ipairs(extmarks) do
+        vim.api.nvim_buf_del_extmark(extmark.bufnr, extmark_ns, extmark.id)
     end
-    extmark_ids = {}
+    extmarks = {}
 end
 
 
