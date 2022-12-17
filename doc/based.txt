@@ -1,0 +1,57 @@
+*based.txt* Based
+*based.nvim*
+
+Author:   Trevor McKay <mail@trmckay.com>
+Version:  0.1
+Homepage: <https://github.com/trmckay/based.nvim>
+License:  MIT license
+
+==============================================================================
+BASED API                                                              *based*
+
+>
+setup({cfg})                                                   *based.setup()*
+
+        Override the default configuration.
+
+        Parameters: ~
+            {cfg} (table)  configuration
+
+        Usage: ~
+>
+                require("based").setup({
+                    -- Additional patterns to check when parsing a
+                    -- number. Should be a map from filetype to
+                    -- a table with two keys: hex and dec. The
+                    -- values at these keys are a list of Lua
+                    -- patterns that return the digits as the
+                    -- first capture group.
+                    patterns = {
+                        verilog = {
+                            hex = { "^h(%x*)" },
+                            dec = { "^d(%x*)", "^(%d*)$" },
+                        },
+                        -- more filetypes...
+                    },
+                    -- Function that renders a hint. n is the
+                    -- parsed integer, base is either "dec" or
+                    -- "hex", winnr is the window from which
+                    -- the binding is called, and line is the
+                    -- line number at which to render the hint.
+                    renderer = function(n, base, winnr, line)
+                    end,
+                    -- Highlight group to render hints with
+                    -- (only applies to the default)
+                    -- renderer.
+                    highlight = "Comment",
+                })
+
+convert({base})                                                    *based.convert()*
+
+        Convert the cursor word in normal mode, or the visual
+        selection line-by-line.
+
+        Parameters: ~
+            {base} (string|nil)  Source base. "dec", "hex" or nil. If this is not
+                                 provided, the plugin will attempt to parse as
+                                 hex first.
