@@ -1,11 +1,16 @@
 local M = {}
 
-M.opts = {}
 
+-- Extmark namespace in which to render virtual hint text
 local extmark_ns
+
+
+-- List of currently visible extmarks
 local extmark_ids = {}
 
-local defaults = {
+
+-- Default options
+M.opts = {
     patterns = {
         c = {
             hex = { "^0[xX](%x*)$" },
@@ -24,6 +29,12 @@ local defaults = {
             dec = { "^(%d*)$" },
         },
     },
+    -- Render a hint
+    --
+    -- @param n number: the parsed value of an integer
+    -- @param base string: the integer base ("hex" or "dec")
+    -- @param winnr number: the window in which to render the hint
+    -- @param line number: the line at which the number was parsed
     renderer = function(n, base, winnr, line)
         local hint
 
@@ -53,15 +64,20 @@ local defaults = {
     highlight = "Comment",
 }
 
-M.opts = defaults
 
--- Use C-like pattern-matching if the filetype is not defined
-setmetatable(defaults.patterns, {
+-- Use C-like (effectively default) pattern-matching if the filetype is not defined
+setmetatable(M.opts.patterns, {
     __index = function(table, _)
         return table.c
     end,
 })
 
+
+-- Given a list of patterns, try to parse an int with the given base
+--
+-- @param str string: what to parse
+-- @param base number: integer base
+-- @param base_patterns list[string]: list of lua-patterns
 local parse_int = function(str, base, base_patterns)
     for _, p in ipairs(base_patterns) do
         local _, _, digits = str:find(p)
@@ -74,6 +90,12 @@ local parse_int = function(str, base, base_patterns)
     end
 end
 
+
+-- Parse an integer in the current buffer
+--
+-- @param str string: what to parse
+-- @param base number|nil: integer base, nil if autodetected
+-- @param bufnr number: used to get patterns for the buffer's filetype
 local buf_parse_int = function(str, base, bufnr)
     local ft_patterns = M.opts.patterns[vim.api.nvim_buf_get_option(bufnr or 0, "filetype")]
 
@@ -95,6 +117,8 @@ local buf_parse_int = function(str, base, bufnr)
     end
 end
 
+
+-- Clear all hints from all windows
 local clear_hints = function()
     for _, id in ipairs(extmark_ids) do
         vim.api.nvim_buf_del_extmark(0, extmark_ns, id)
@@ -102,12 +126,21 @@ local clear_hints = function()
     extmark_ids = {}
 end
 
+
+-- Clear all hints when something happens
 vim.api.nvim_create_autocmd("CursorMoved,ModeChanged", {
     pattern = "*",
     group = vim.api.nvim_create_augroup("Based", { clear = true }),
     callback = clear_hints,
 })
 
+
+-- Parse a string as an integer and render the hint
+--
+-- @param str string: what to parse
+-- @param base number|nil: integer base, nil if autodetected
+-- @param winnr number: window number
+-- @param line number: line number
 local parse_and_render = function(str, base, winnr, line)
     winnr = winnr or vim.api.nvim_get_current_win()
     local bufnr = vim.api.nvim_win_get_buf(winnr)
@@ -117,6 +150,9 @@ local parse_and_render = function(str, base, winnr, line)
     end
 end
 
+-- Parse and convert the cursor word
+--
+-- @param base number|nil: integer base, nil if autodetected
 local cword = function(base)
     parse_and_render(vim.fn.expand("<cword>"), base, 0, vim.api.nvim_win_get_cursor(0)[1])
 end
@@ -146,20 +182,32 @@ local visual = function(base)
     parse_and_render(selection, base, 0, line + 1)
 end
 
+
+-- Parse and convert the cursor word when in normal mode or the
+-- visual selection when in visual mode.
+--
+-- @param base number|nil: integer base, nil if autodetected
 M.convert = function(base)
-    if vim.fn.mode() == "n" then
+    local mode = vim.fn.mode()
+    if mode == "n" then
         cword(base)
-    else
+    elseif mode == "v" or mode == "V" then
         visual(base)
     end
 end
 
+-- Expose the lua API as a user-command
 vim.api.nvim_create_user_command("BasedConvert", function(opts)
     M.convert(opts.fargs[1])
 end, { nargs = "?" })
 
-M.setup = function(user_opts)
-    M.opts = vim.tbl_deep_extend("force", M.opts, user_opts)
+
+-- Change the defaults
+--
+-- @param user_opts table: see `:h based` for details
+M.setup = function(opts)
+    M.opts = vim.tbl_deep_extend("force", M.opts, opts)
 end
+
 
 return M
