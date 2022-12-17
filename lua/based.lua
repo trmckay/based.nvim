@@ -1,6 +1,6 @@
 local M = {}
 
-local opts = {}
+M.opts = {}
 
 local extmark_ns
 local extmark_ids = {}
@@ -41,7 +41,7 @@ local defaults = {
         local id = vim.api.nvim_buf_set_extmark(bufnr or 0, extmark_ns, cursor[1] - 1, -1, {
             virt_text_pos = "overlay",
             virt_text = {
-                { hint, opts.highlight },
+                { hint, M.opts.highlight },
             },
         })
 
@@ -50,8 +50,9 @@ local defaults = {
     highlight = "Comment",
 }
 
-opts = defaults
+M.opts = defaults
 
+-- Use C-like pattern-matching if the filetype is not defined
 setmetatable(defaults.patterns, {
     __index = function(table, _)
         return table.c
@@ -71,7 +72,7 @@ local parse_int = function(str, base, base_patterns)
 end
 
 local buf_parse_int = function(str, bufnr)
-    local ft_patterns = opts.patterns[vim.api.nvim_buf_get_option(bufnr or 0, "filetype")]
+    local ft_patterns = M.opts.patterns[vim.api.nvim_buf_get_option(bufnr or 0, "filetype")]
     local n = parse_int(str, 16, ft_patterns.hex)
     if n then
         return n, "hex"
@@ -100,7 +101,7 @@ M.parse_and_render = function(str, winnr)
     local bufnr = vim.api.nvim_win_get_buf(winnr)
     local n, base = buf_parse_int(str, bufnr)
     if n then
-        opts.renderer(n, base, winnr)
+        M.opts.renderer(n, base, winnr)
     end
 end
 
@@ -108,8 +109,10 @@ M.cword = function()
     M.parse_and_render(vim.fn.expand("<cword>"))
 end
 
+vim.api.nvim_create_user_command("BasedConvert", M.cword, { nargs = 0 })
+
 M.setup = function(user_opts)
-    opts = vim.tbl_deep_extend("force", opts, user_opts)
+    M.opts = vim.tbl_deep_extend("force", M.opts, user_opts)
 end
 
 return M
