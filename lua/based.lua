@@ -142,6 +142,7 @@ vim.api.nvim_create_autocmd("CursorMoved,ModeChanged", {
 -- @param winnr number: window number
 -- @param line number: line number
 local parse_and_render = function(str, base, winnr, line)
+    clear_hints()
     winnr = winnr or vim.api.nvim_get_current_win()
     local bufnr = vim.api.nvim_win_get_buf(winnr)
     local n, found_base = buf_parse_int(str, base, bufnr)
@@ -176,7 +177,6 @@ local visual = function(base)
     -- Get single-line visual selection and strip leading/trailing whitespace
     local selection = vim.api.nvim_buf_get_lines(0, line, line + 1, false)[1]
     selection = selection:sub(vstart[3], vend[3])
-    vim.notify(selection, vim.log.levels.ERROR)
     _, _, selection = selection:find("^%s*(.*)%s*$")
 
     parse_and_render(selection, base, 0, line + 1)
