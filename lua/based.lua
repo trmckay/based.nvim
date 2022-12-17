@@ -20,7 +20,7 @@ local defaults = {
             dec = { "%d(%x*)", "^(%d*)$" },
         },
     },
-    renderer = function(n, base, winnr)
+    renderer = function(n, base, winnr, line)
         local hint
 
         if base == "hex" then
@@ -31,14 +31,13 @@ local defaults = {
             return
         end
 
-        local cursor = vim.api.nvim_win_get_cursor(winnr)
         local bufnr = vim.api.nvim_win_get_buf(winnr)
 
         if not extmark_ns then
             extmark_ns = vim.api.nvim_create_namespace("Based")
         end
 
-        local id = vim.api.nvim_buf_set_extmark(bufnr or 0, extmark_ns, cursor[1] - 1, -1, {
+        local id = vim.api.nvim_buf_set_extmark(bufnr or 0, extmark_ns, line - 1, -1, {
             virt_text_pos = "overlay",
             virt_text = {
                 { hint, M.opts.highlight },
@@ -90,26 +89,50 @@ local clear_hints = function()
     extmark_ids = {}
 end
 
-vim.api.nvim_create_autocmd("CursorMoved", {
+vim.api.nvim_create_autocmd("CursorMoved,ModeChanged", {
     pattern = "*",
     group = vim.api.nvim_create_augroup("Based", { clear = true }),
     callback = clear_hints,
 })
 
-M.parse_and_render = function(str, winnr)
+local parse_and_render = function(str, winnr, line)
     winnr = winnr or vim.api.nvim_get_current_win()
     local bufnr = vim.api.nvim_win_get_buf(winnr)
     local n, base = buf_parse_int(str, bufnr)
     if n then
-        M.opts.renderer(n, base, winnr)
+        M.opts.renderer(n, base, winnr, line)
     end
 end
 
-M.cword = function()
-    M.parse_and_render(vim.fn.expand("<cword>"))
+local cword = function()
+    parse_and_render(vim.fn.expand("<cword>"), 0, vim.api.nvim_win_get_cursor(0)[1])
 end
 
-vim.api.nvim_create_user_command("BasedConvert", M.cword, { nargs = 0 })
+local visual = function()
+    local a_orig = vim.fn.getreg("a")
+    local mode = vim.fn.mode()
+    if mode ~= "v" and mode ~= "V" then
+        vim.cmd([[normal! gv]])
+    end
+    vim.cmd([[normal! "aygv]])
+    local selection = vim.fn.getreg("a")
+    vim.fn.setreg("a", a_orig)
+    local line = vim.fn.getpos("v")[2]
+    for offset, line_text in ipairs(vim.fn.split(selection, "\n")) do
+        local _, _, text = line_text:find("^%s*(.*)%s*$")
+        parse_and_render(text, 0, line + offset - 1)
+    end
+end
+
+M.convert = function()
+    if vim.fn.mode() == "n" then
+        cword()
+    else
+        visual()
+    end
+end
+
+vim.api.nvim_create_user_command("BasedConvert", M.convert, { nargs = 0 })
 
 M.setup = function(user_opts)
     M.opts = vim.tbl_deep_extend("force", M.opts, user_opts)
