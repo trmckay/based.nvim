@@ -178,10 +178,12 @@ local visual = function(base)
     end
 
     local line = vstart[2] - 1
+    local col_start = math.min(vstart[3], vend[3])
+    local col_end = math.max(vstart[3], vend[3])
 
     -- Get single-line visual selection and strip leading/trailing whitespace
     local selection = vim.api.nvim_buf_get_lines(0, line, line + 1, false)[1]
-    selection = selection:sub(vstart[3], vend[3])
+    selection = selection:sub(col_start, col_end)
     _, _, selection = selection:find("^%s*(.*)%s*$")
 
     parse_and_render(selection, base, 0, line + 1)
